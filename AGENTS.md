@@ -1,0 +1,80 @@
+# AGENTS.md
+
+## Project overview
+
+`dotdoc` — Make Graphviz drawings a navigable part of your documentation: nodes link to their API entries, with previews on hover.
+
+## Source layout
+
+```
+src/dotdoc/
+  __init__.py      — public API (placeholder: `greet`)
+tests/             — one test file per module
+examples/          — marimo notebooks, exported into docs/ by `just docs`
+docs/              — hand-written Markdown + generated example.md
+site/              — built documentation output (gitignored)
+```
+
+## Commands
+
+All via `just`, prefixed with `uv run` unless the virtual environment is activated: the recipes call tools that are only on the PATH inside it.
+
+| Command | What it does |
+|---|---|
+| `just` | lint → typecheck → test → check-examples → docs, in order |
+| `just lint` | `ruff format` + `marimo check --fix` + `ruff check --fix` + `marimo check --strict` |
+| `just lint-check` | Non-mutating variant for CI |
+| `just check-canonical` | Applies `marimo check --fix` and asserts the tree is clean |
+| `just check-examples` | `python examples/notebook.py` — the only gate that executes cells |
+| `just typecheck` | `pyright` |
+| `just test` | `pytest` |
+| `just test-cov` | `pytest` with coverage, `--cov-fail-under=90` |
+| `just doctest` | Doctests in `src/` |
+| `just docs` | Export notebooks, then `zensical build` |
+| `just release` | Tag the `pyproject.toml` version and publish a GitHub release for it, publishing to PyPI |
+
+Setup: `uv sync`.
+
+## Releasing
+
+Every PR merges to `main`; a release is a tag on it, made by the maintainer only.
+
+1. `uv version --bump rc` (`0.2.0.dev1` → `0.2.0rc1`, `0.2.0rc1` → `0.2.0rc2`), or `--bump stable` for a full release, and commit it to `main`.
+2. `just release`, which refuses a dev version, a dirty tree, or a `main` that differs from `origin/main`.
+3. After a full release, `uv version --bump minor --bump dev` and commit, so a git install of `main` does not report the released version.
+   After a pre-release, `main` keeps reporting the rc version until the next bump; that is accepted.
+
+A pre-release lets downstream projects test unreleased work from PyPI, by asking for it explicitly (`>=0.2.0rc1`), while everyone else keeps the last stable release.
+
+The docs site deploys only on a stable release, so it documents what PyPI serves.
+To rebuild a release's docs: `gh workflow run docs.yml -f ref=v0.2.0`.
+Running it without `ref` deploys `main`, so the site then documents unreleased work; to publish a docs fix properly, release a patch.
+
+TestPyPI is manual only (Actions → "Publish to PyPI" → testpypi), as a dry run after changing the publish workflow or the build.
+
+## Toolchain
+
+uv (packaging), just (tasks), ruff (format + lint), pyright (types), pytest (tests), zensical + mkdocstrings (docs), marimo + marimo-md-export (example notebooks), pre-commit, GitHub Actions.
+
+## Conventions
+
+- Ruff `select` is explicit, never left to defaults — see the comment in `pyproject.toml`.
+- Docstrings are required in `src/` (google convention) and exempt in `tests/` and `examples/`.
+- `docs/example.md` and `docs/example_assets/` are **generated**; edit `examples/notebook.py` instead.
+- The uv-pre-commit rev and the `uv_build` range in `[build-system]` must stay in step: the range is the rev's whole minor, `>=X.Y.0,<X.(Y+1).0`.
+  `just bump` sets both from the installed uv after `uv self update`, updates the ruff and pyright hooks, relocks, and checks that `uv_build` still resolves under `exclude-newer`.
+  The `[dependency-groups]` bounds are floors and are not bumped; see the comment above them.
+
+## This project was generated from a template
+
+The answers are in `.copier-answers.yml`. `copier update` pulls later template
+changes in; it uses that file to replay the original answers, so keep it
+committed and don't hand-edit it.
+
+## marimo ↔ ruff interaction
+
+Verified against marimo 0.23.16 / ruff 0.16.1.
+
+- Do not reorder `lint` or drop `--strict` from `marimo check`; the comment above the recipe explains why.
+- `check-canonical` and `check-examples` are the only gates for cell signatures and for cells that raise; see their comments.
+- Do not remove the `examples/**` per-file-ignores in `pyproject.toml`; several stop ruff and marimo undoing each other's fixes.

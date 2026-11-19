@@ -1,0 +1,15 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+# Commit this file: `copier update` reads it to replay your answers.
+_commit: v0.3.1
+_src_path: gh:jmarshrossney/python-package-template
+author_email: 17361029+jmarshrossney@users.noreply.github.com
+author_name: Joe Marsh Rossney
+copyright_holder: Joe Marsh Rossney
+github_owner: jmarshrossney
+package_name: dotdoc
+project_description: 'Make Graphviz drawings a navigable part of your documentation:
+    nodes link to their API entries, with previews on hover.'
+project_name: dotdoc
+release: pypi
+with_cli: false
+with_license: true

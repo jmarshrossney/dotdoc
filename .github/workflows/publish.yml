@@ -1,0 +1,45 @@
+name: Publish to PyPI
+
+# Publishing workflow with two trigger modes:
+#
+# 1. Publish to PyPI: `just release`, or publish a GitHub Release on
+#    github.com. A version such as 0.2.0rc1 is a pre-release: PyPI serves it
+#    only to those who ask for it, and the docs workflow does not deploy it.
+#    `just release` marks it as one on GitHub; on github.com, tick "Set as a
+#    pre-release".
+#
+# 2. Manual publish (Actions tab -> "Publish to PyPI" -> "Run workflow"):
+#    Choose 'testpypi' or 'pypi' from the dropdown. Defaults to testpypi.
+#    Use testpypi as a dry run after changing this workflow or the build.
+#
+# Both targets use trusted publishing, so no API tokens are needed -- but the
+# `pypi` and `testpypi` environments must exist in the repo settings, and a
+# pending publisher must be registered on (Test)PyPI for this repo.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Publish target"
+        required: true
+        default: testpypi
+        type: choice
+        options:
+          - testpypi
+          - pypi
+
+jobs:
+  pypi-publish:
+    name: Upload release to ${{ inputs.target || 'pypi' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target || 'pypi' }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+      - run: uv build
+      - run: uv publish ${{ inputs.target == 'testpypi' && '--publish-url https://test.pypi.org/legacy/' || '' }}
