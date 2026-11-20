@@ -2,6 +2,7 @@ import pytest
 
 from dotdoc.hamilton import (
     api_autoref,
+    attribute_style,
     clean_legend,
     compose_styles,
     fill_by_tag,
@@ -43,6 +44,22 @@ class TestComposeStyles:
             "function",
             None,
         )
+
+
+class TestAttributeStyle:
+    def test_sets_the_attribute_of_named_nodes(self):
+        style = attribute_style("penwidth", {"a": "3"})
+        node = type("Node", (), {"name": "a"})()
+        assert style(node=node, node_class="function") == (
+            {"penwidth": "3"},
+            "function",
+            None,
+        )
+
+    def test_leaves_other_nodes_alone(self):
+        style = attribute_style("penwidth", {"a": "3"})
+        node = type("Node", (), {"name": "b"})()
+        assert style(node=node, node_class="function") == ({}, "function", None)
 
 
 class TestSummary:

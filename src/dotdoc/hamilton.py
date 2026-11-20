@@ -5,8 +5,8 @@ Hamilton's `Driver` display methods (`display_all_functions`,
 called once per node with that node and its class, and returning the node's
 Graphviz attributes, its base class and its legend entry. The functions here
 build style functions that link nodes to their documentation, give them a
-tooltip from their docstring and fill them by a tag; `compose_styles` combines
-them with each other and with your own.
+tooltip from their docstring, fill them by a tag or set any attribute by node
+name; `compose_styles` combines them with each other and with your own.
 
 Hamilton draws each legend entry with the style of the last node that named
 it, so once nodes are linked, every legend swatch carries some node's link and
@@ -33,6 +33,7 @@ __all__ = [
     "StyleFunction",
     "TooltipFunction",
     "api_autoref",
+    "attribute_style",
     "clean_legend",
     "compose_styles",
     "fill_by_tag",
@@ -143,7 +144,30 @@ def _summary_tooltip(
     return None if function is None else summary(function)
 
 
-def _attribute_style(attribute: str, values: Mapping[str, str]) -> StyleFunction:
+def attribute_style(attribute: str, values: Mapping[str, str]) -> StyleFunction:
+    """Build a style function that sets one Graphviz attribute by node name.
+
+    For values computed per node, such as tooltips, fill colours or pen
+    widths. A node absent from `values` is left alone, and no node gets a
+    legend entry.
+
+    Args:
+        attribute: The name of the Graphviz attribute, such as `"penwidth"`.
+        values: Node name to the attribute's value.
+
+    Returns:
+        A style function to pass to Hamilton, alone or through
+        `compose_styles`.
+
+    Examples:
+        ```python
+        widths = {"split": "3"}
+        digraph = dr.display_all_functions(
+            custom_style_function=attribute_style("penwidth", widths)
+        )
+        ```
+    """
+
     def style(
         *, node: graph_types.HamiltonNode, node_class: str
     ) -> tuple[dict[str, str], str | None, str | None]:
@@ -214,7 +238,7 @@ def link_style(dr: Driver, link: LinkFunction | None = None) -> StyleFunction:
         ```
     """
     urls = _node_values(dr, link or _api_link)
-    return _attribute_style("URL", {k: v for k, v in urls.items() if v is not None})
+    return attribute_style("URL", {k: v for k, v in urls.items() if v is not None})
 
 
 def summary(function: Callable) -> str | None:
@@ -268,7 +292,7 @@ def tooltip_style(dr: Driver, tooltip: TooltipFunction | None = None) -> StyleFu
         `compose_styles`.
     """
     tips = _node_values(dr, tooltip or _summary_tooltip)
-    return _attribute_style(
+    return attribute_style(
         "tooltip", {k: _tooltip_text(v) for k, v in tips.items() if v}
     )
 
