@@ -1,41 +1,18 @@
-# Run the full check suite: lint, typecheck, test, run examples, docs.
+# Run the full check suite: lint, typecheck, test, docs.
 _:
-  @just lint typecheck test check-examples docs
+  @just lint typecheck test docs
 
-# Order matters: `marimo check --fix` prunes cell return tuples, which can
-# strand an import, so it must run before `ruff check --fix` reports the F401;
-# the reverse order needs two passes. Without `--strict`, `marimo check` exits 0
-# on runtime, formatting and WASM findings and fails only on a broken
-# dependency graph.
-[doc('Format and lint the package using ruff, and lint the examples using marimo.')]
+# Format and lint the package using ruff.
 [group('check')]
 lint:
   ruff format
-  marimo check --fix examples/
   ruff check --fix
-  marimo check --strict examples/
 
 # Variant of `lint` that doesn't cause any changes to files (for CI).
 [group('check')]
 lint-check:
   ruff format --check
   ruff check
-  marimo check --strict examples/
-
-# The only gate for non-canonical cell signatures: `marimo check` reports
-# nothing about them.
-[doc("Assert the example notebooks are in marimo's canonical form.")]
-[group('check')]
-check-canonical:
-  marimo check --fix examples/
-  git diff --exit-code examples/
-
-# The only execution gate: `marimo-md-export` in `docs` prints an error but
-# exits 0 when a cell raises.
-[doc('Confirm the example notebooks actually run.')]
-[group('check')]
-check-examples:
-  python examples/notebook.py
 
 # Run static type checker.
 [group('check')]
@@ -57,20 +34,14 @@ test-cov:
 doctest:
   pytest --doctest-modules src/dotdoc
 
-# Export the example notebooks, then build the documentation using Zensical.
+# Build the documentation using Zensical.
 [group('docs')]
-docs: docs-examples
+docs:
   zensical build
-
-# Export the example notebooks to markdown with their rendered outputs.
-[group('docs')]
-docs-examples:
-  marimo-md-export examples/notebook.py docs/example.md
-  ruff format examples/  # override marimo's reformatting
 
 # Serve the documentation locally with live reload.
 [group('docs')]
-docs-serve: docs-examples
+docs-serve:
   zensical serve
 
 # Pin the uv hook and uv_build to the installed uv, update the other hooks, relock.

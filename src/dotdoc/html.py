@@ -364,12 +364,12 @@ def graph_html(
             positioned from, or if `dark` is given without `theme_colours`.
 
     Examples:
-        In a marimo notebook exported to a documentation page:
+        In a markdown-exec block in a documentation page:
 
         ```python
         drawing = graphviz.Digraph()
         drawing.node("graph_html", URL=autoref("dotdoc.html.graph_html"))
-        mo.Html(graph_html(drawing))
+        print(graph_html(drawing))
         ```
     """
     svg = drawing.pipe(format="svg", encoding="utf-8")

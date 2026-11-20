@@ -22,15 +22,13 @@ or individually:
 
 | Command | What it does |
 |---|---|
-| `just lint` | `ruff format`, `marimo check --fix`, `ruff check --fix`, `marimo check --strict` |
+| `just lint` | `ruff format`, `ruff check --fix` |
 | `just lint-check` | Non-mutating variant, used by CI |
-| `just check-canonical` | Asserts the example notebooks are in marimo's canonical form |
-| `just check-examples` | Runs the example notebooks — the only step that executes cells |
 | `just typecheck` | `pyright` |
 | `just test` | `pytest` |
 | `just test-cov` | `pytest` with coverage, failing under 90% |
 | `just doctest` | Run the doctest examples in `src/` |
-| `just docs` | Export the example notebooks, then `zensical build` |
+| `just docs` | `zensical build` |
 | `just docs-serve` | The same, with a live-reloading local server |
 | `just bump` | Pin the uv hook and `uv_build` to the installed uv, update the ruff and pyright hooks, relock |
 
@@ -47,12 +45,8 @@ pre-commit install
 
 The documentation is built with [Zensical](https://zensical.org/) from the Markdown in `docs/`, plus an API reference generated from docstrings by [mkdocstrings](https://mkdocstrings.github.io/).
 
-`docs/example.md` is **generated** — it is exported from `examples/notebook.py` (a [marimo](https://marimo.io/) notebook) by `just docs`, with cell outputs rendered.
-Edit the notebook, not the Markdown:
-
-```sh
-marimo edit examples/notebook.py
-```
+A `python exec="on"` block in `docs/` runs during the build, through [markdown-exec](https://pawamoy.github.io/markdown-exec/), and its output goes into the page.
+The build passes even when a block raises, so `tests/test_docs.py` runs every such block.
 
 Preview the site locally with `just docs-serve`.
 

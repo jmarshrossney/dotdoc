@@ -16,30 +16,9 @@ Copyright &copy; 2026 Joe Marsh Rossney
 
 nav = [
   { "Home" = "index.md" },
-  { "Getting started" = "getting-started.md" },
-  { "Example" = "example.md" },
   { "How it works" = "how-it-works.md" },
+  { "Hamilton" = "hamilton.md" },
   { "API Reference" = "api.md" },
-]
-
-# Math rendering with KaTeX.
-#
-# `pymdownx.arithmatex` with `generic = true` (see below) leaves the maths as
-# inert `\(...\)` / `\[...\]` markup for a client-side renderer to pick up.
-# `_static/js/katex.js` is that glue: it hooks zensical's `document$` observable
-# so maths is re-rendered after each instant-navigation page swap, not just on
-# the initial load. It must be listed *before* the KaTeX bundles -- the
-# subscription is only registered here, and fires later, by which point
-# `renderMathInElement` is defined.
-#
-# Delete all three blocks below (plus `arithmatex`) if the docs have no maths.
-extra_javascript = [
-    "_static/js/katex.js",
-    "https://unpkg.com/katex@0/dist/katex.min.js",
-    "https://unpkg.com/katex@0/dist/contrib/auto-render.min.js",
-]
-extra_css = [
-    "https://unpkg.com/katex@0/dist/katex.min.css",
 ]
 
 [project.theme]
@@ -91,10 +70,6 @@ link = "https://github.com/jmarshrossney"
 [project.markdown_extensions.md_in_html]
 [project.markdown_extensions.toc]
 permalink = true
-[project.markdown_extensions.pymdownx.arithmatex]
-# `generic = true` emits renderer-agnostic markup for KaTeX to pick up at
-# runtime -- see the `extra_javascript` comment above.
-generic = true
 [project.markdown_extensions.pymdownx.betterem]
 [project.markdown_extensions.pymdownx.caret]
 [project.markdown_extensions.pymdownx.details]
@@ -129,8 +104,7 @@ custom_checkbox = true
 # ------------
 [project.plugins.mkdocstrings.handlers.python]
 inventories = ["https://docs.python.org/3/objects.inv"]
-# `examples_lib` holds the modules the example notebooks draw and document.
-paths = ["src", "examples_lib"]
+paths = ["src"]
 
 [project.plugins.mkdocstrings.handlers.python.options]
 annotations_path = "brief"

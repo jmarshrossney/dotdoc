@@ -1,41 +1,35 @@
 # dotdoc
 
 Make Graphviz drawings a navigable part of your documentation: nodes link to their API entries, with previews on hover.
-Includes styles for Hamilton graphs.
 
-Built with
-[uv](https://docs.astral.sh/uv/),
-[just](https://just.systems/),
-[ruff](https://docs.astral.sh/ruff/),
-[pyright](https://github.com/microsoft/pyright),
-[pytest](https://pytest.org/) and
-[zensical](https://zensical.org/).
+```python exec="on" html="1" source="material-block" result="html"
+import graphviz
+
+from dotdoc import autoref, graph_html
+
+drawing = graphviz.Digraph(graph_attr={"rankdir": "LR"}, node_attr={"shape": "box"})
+drawing.node("autoref", URL=autoref("dotdoc.html.autoref"))
+drawing.node("graph_html", URL=autoref("dotdoc.html.graph_html"))
+drawing.edge("autoref", "graph_html")
+
+print(graph_html(drawing))
+```
+
+Hover over a node's name to preview its API entry, and click it to go there.
 
 ## Installation
 
-```sh
-pip install dotdoc
-```
+=== "uv"
 
-## Usage
+    ```sh
+    uv add dotdoc
+    ```
 
-Give a Graphviz node a `URL` and render the drawing with `graph_html`:
+=== "pip"
 
-```python
-import graphviz
-from dotdoc import autoref, graph_html
+    ```sh
+    pip install dotdoc
+    ```
 
-drawing = graphviz.Digraph()
-drawing.node("graph_html", URL=autoref("dotdoc.html.graph_html"))
-html = graph_html(drawing)  # write into a page, or return mo.Html(html) from marimo
-```
-
-The node's name then links to its mkdocstrings entry, whatever the site's URL style, and Zensical and Material for MkDocs preview that entry on hover.
-For Apache Hamilton DAGs, `dotdoc.hamilton` links each node to the function that defines it:
-
-```sh
-pip install "dotdoc[hamilton]"
-```
-
-See [Getting started](getting-started.md) for more, the [example](example.md)
-for a worked notebook, and the [API reference](api.md) for the full interface.
+Rendering needs Graphviz's `dot` program, from your system's package manager.
+For Apache Hamilton DAGs, see [Hamilton](hamilton.md).

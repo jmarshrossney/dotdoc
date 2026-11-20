@@ -91,7 +91,11 @@ That is either an ordinary URL, written into the page as it is, or an identifier
 drawing.node("graph_html", URL=autoref("dotdoc.html.graph_html"))
 ```
 
-For a Hamilton DAG, [`link_style`][dotdoc.hamilton.link_style] sets the `URL` of every node that a function defines, by default to that function's identifier, through [`api_autoref`][dotdoc.hamilton.api_autoref].
+The documentation build writes an identifier's link relative to each page, so it works whatever the site's URL style, and reports an identifier it cannot find as a warning.
+Such links work only in pages the build writes.
+An ordinary URL must already be right from the built page: `api.html#…` with `use_directory_urls = false`, `../api/#…` with it on.
+
+For a Hamilton DAG, [`link_style`][dotdoc.hamilton.link_style] sets the `URL` of every node that a function defines, by default to that function's identifier, through [`api_autoref`][dotdoc.hamilton.api_autoref]; see [Hamilton](hamilton.md).
 
 ## 2. Graphviz draws the picture, and says where everything is
 
@@ -145,20 +149,9 @@ Those are drawn with CSS `light-dark()`, which the browser resolves by the colou
 ```
 
 It has no blank lines, so Markdown passes it through as one block of raw HTML.
-A notebook cell outputs it, the notebook's export writes it into the page, and the documentation build resolves the `<autoref>` elements.
+Write it into the page at build time, for example by printing it from a [markdown-exec](https://pawamoy.github.io/markdown-exec/) block, as this site does, and the documentation build resolves the `<autoref>` elements.
 The overlays have to be in the page when it loads for the theme to find them, which is why the fragment is written into the page rather than added by a script.
 
 With `controls=True`, buttons above the drawing zoom it in and out and expand it to cover the window.
 Zooming scales the drawing and its overlays together, inside an area that scrolls, so links and previews work at any size.
 Each button is a single inline `onclick` handler, so they need no JavaScript file.
-
-## Hamilton drawings
-
-Hamilton's display methods take one style function, called for every node.
-dotdoc's helpers each build one, and [`compose_styles`][dotdoc.hamilton.compose_styles] combines them:
-
-- [`link_style`][dotdoc.hamilton.link_style] sets each node's `URL`, as in step 1;
-- [`tooltip_style`][dotdoc.hamilton.tooltip_style] sets each node's tooltip to the [`summary`][dotdoc.hamilton.summary] of its function's docstring;
-- [`fill_by_tag`][dotdoc.hamilton.fill_by_tag] colours each node by a tag and names a legend entry after it.
-
-Hamilton draws each legend entry in the style of the last node that named it, links and tooltips included, so [`clean_legend`][dotdoc.hamilton.clean_legend] removes those from the legend before the drawing goes to `graph_html`.

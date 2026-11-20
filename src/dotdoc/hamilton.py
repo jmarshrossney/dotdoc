@@ -244,6 +244,10 @@ def fill_by_tag(tag: str, colours: Mapping[str, str]) -> StyleFunction:
     A node whose `tag` value is a key of `colours` is filled with that colour
     and gets a legend entry named after the value. Other nodes are left alone.
 
+    Hamilton names each legend entry's Graphviz node after the entry, so a
+    value that is also the name of a node draws that node inside the legend:
+    choose values that are not node names.
+
     Args:
         tag: The name of the tag, as given to Hamilton's `@tag`.
         colours: Tag value to fill colour, in any form Graphviz accepts.
