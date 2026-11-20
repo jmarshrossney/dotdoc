@@ -8,16 +8,17 @@ from collections.abc import Callable
 import graphviz
 from hamilton.driver import Driver
 from hamilton.function_modifiers import tag
+from hamilton.graph_types import HamiltonNode
 
 import dotdoc
 import dotdoc.hamilton
 from dotdoc.hamilton import StyleFunction
 
 
-def _api_entry(step: Callable) -> str | None:
+def _api_entry(node: HamiltonNode, step: Callable | None) -> str | None:
     """Link a step to the API entry of the dotdoc function it is named after."""
     for module in (dotdoc.hamilton, dotdoc):
-        if (function := getattr(module, step.__name__, None)) is not None:
+        if step and (function := getattr(module, step.__name__, None)) is not None:
             return dotdoc.hamilton.api_autoref(function)
     return None
 

@@ -17,7 +17,7 @@ Needs the `hamilton` extra: `pip install "dotdoc[hamilton]"`.
 
 import inspect
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING
 
 from hamilton import graph_types
@@ -48,13 +48,24 @@ It is called with the keyword arguments `node` (a `HamiltonNode`) and
 `node_class` (a string), and returns `(attributes, base_class, legend_entry)`.
 """
 
-type LinkFunction = Callable[[Callable], str | None]
-"""Receives a node's function and returns the URL of its documentation, or
-`None` for no link."""
+type LinkFunction = Callable[[graph_types.HamiltonNode, Callable | None], str | None]
+"""Receives a node and the function that defines it, and returns the URL of its
+documentation, or `None` for no link.
 
-type TooltipFunction = Callable[[Callable], str | None]
-"""Receives a node's function and returns its tooltip text, or `None` for no
-tooltip."""
+The function is `None` for inputs, config, and field nodes from
+`@extract_fields`, which share their parent's function.
+"""
+
+type TooltipFunction = Callable[
+    [graph_types.HamiltonNode, Callable | None], str | Sequence[str] | None
+]
+"""Receives a node and the function that defines it, and returns its tooltip,
+or `None` for no tooltip.
+
+A string is one line; a sequence of strings is one line each. The function is
+`None` for inputs, config, and field nodes from `@extract_fields`, which share
+their parent's function.
+"""
 
 
 def compose_styles(*style_functions: StyleFunction) -> StyleFunction:
@@ -112,6 +123,26 @@ def _own_functions(dr: Driver) -> dict[str, Callable]:
     return own
 
 
+def _node_values[T](
+    dr: Driver, value: Callable[[graph_types.HamiltonNode, Callable | None], T]
+) -> dict[str, T]:
+    own = _own_functions(dr)
+    return {
+        name: value(graph_types.HamiltonNode.from_node(n), own.get(name))
+        for name, n in dr.graph.nodes.items()
+    }
+
+
+def _api_link(node: graph_types.HamiltonNode, function: Callable | None) -> str | None:
+    return None if function is None else api_autoref(function)
+
+
+def _summary_tooltip(
+    node: graph_types.HamiltonNode, function: Callable | None
+) -> str | None:
+    return None if function is None else summary(function)
+
+
 def _attribute_style(attribute: str, values: Mapping[str, str]) -> StyleFunction:
     def style(
         *, node: graph_types.HamiltonNode, node_class: str
@@ -144,21 +175,20 @@ def api_autoref(function: Callable) -> str:
     return autoref(f"{function.__module__}.{function.__qualname__}")
 
 
-def link_style(dr: Driver, link: LinkFunction = api_autoref) -> StyleFunction:
+def link_style(dr: Driver, link: LinkFunction | None = None) -> StyleFunction:
     """Build a style function that links nodes to their documentation.
 
-    Each node a function defines gets `URL` set to `link(function)`, which
-    `dotdoc.html.graph_html` makes the node's name link to. Field nodes from
-    `@extract_fields` share their parent's function and get no link, nor do
-    inputs and config.
+    Each node gets `URL` set to `link(node, function)`, which
+    `dotdoc.html.graph_html` makes the node's name link to.
 
     Args:
         dr: The driver whose DAG will be drawn.
-        link: Receives a node's function and returns its URL, or `None` for no
-            link. The default links to the function's mkdocstrings entry,
-            through `api_autoref`; a function documented under another path,
-            such as where a package re-exports it, needs a link function of
-            its own.
+        link: Receives a node and the function that defines it, or `None` for
+            inputs, config and field nodes from `@extract_fields`, and returns
+            its URL, or `None` for no link. The default links each node a
+            function defines to the function's mkdocstrings entry, through
+            `api_autoref`; a function documented under another path, such as
+            where a package re-exports it, needs a link function of its own.
 
     Returns:
         A style function to pass to Hamilton, alone or through
@@ -174,15 +204,16 @@ def link_style(dr: Driver, link: LinkFunction = api_autoref) -> StyleFunction:
         Or to a page outside the documentation build:
 
         ```python
-        def source_url(fn):
-            return f"https://example.org/source/{fn.__module__}.html"
+        def source_url(node, fn):
+            if fn is not None:
+                return f"https://example.org/source/{fn.__module__}.html"
 
         digraph = dr.display_all_functions(
             custom_style_function=link_style(dr, source_url)
         )
         ```
     """
-    urls = {name: link(fn) for name, fn in _own_functions(dr).items()}
+    urls = _node_values(dr, link or _api_link)
     return _attribute_style("URL", {k: v for k, v in urls.items() if v is not None})
 
 
@@ -214,28 +245,38 @@ def summary(function: Callable) -> str | None:
     return " ".join(doc.split("\n\n", 1)[0].split()).replace("`", "")
 
 
-def tooltip_style(dr: Driver, tooltip: TooltipFunction = summary) -> StyleFunction:
-    """Build a style function that gives nodes a tooltip.
+def tooltip_style(dr: Driver, tooltip: TooltipFunction | None = None) -> StyleFunction:
+    r"""Build a style function that gives nodes a tooltip.
 
-    Each node a function defines gets `tooltip` set to `tooltip(function)`,
-    which a browser shows on hovering over the node in SVG output. By default
-    that is the first paragraph of the function's docstring. Backslashes are
-    escaped, so the text is shown as written rather than read as Graphviz
-    escape sequences. Field nodes, inputs and config get no tooltip.
+    Each node gets `tooltip` set to `tooltip(node, function)`, which a browser
+    shows on hovering over the node in SVG output. By default that is the
+    first paragraph of the docstring of the function that defines the node.
+    Backslashes are escaped, so the text is shown as written rather than read
+    as Graphviz escape sequences, and the lines of a sequence are joined with
+    Graphviz's `\n` line break.
 
     Args:
         dr: The driver whose DAG will be drawn.
-        tooltip: Receives a node's function and returns its tooltip text, or
-            `None` for no tooltip.
+        tooltip: Receives a node and the function that defines it, or `None`
+            for inputs, config and field nodes from `@extract_fields`, and
+            returns its tooltip as a string or a sequence of lines, or `None`
+            for no tooltip. The default gives each node a function defines the
+            `summary` of that function.
 
     Returns:
         A style function to pass to Hamilton, alone or through
         `compose_styles`.
     """
-    tips = {name: tooltip(fn) for name, fn in _own_functions(dr).items()}
+    tips = _node_values(dr, tooltip or _summary_tooltip)
     return _attribute_style(
-        "tooltip", {k: v.replace("\\", "\\\\") for k, v in tips.items() if v}
+        "tooltip", {k: _tooltip_text(v) for k, v in tips.items() if v}
     )
+
+
+def _tooltip_text(lines: str | Sequence[str]) -> str:
+    if isinstance(lines, str):
+        lines = [lines]
+    return "\\n".join(line.replace("\\", "\\\\") for line in lines)
 
 
 def fill_by_tag(tag: str, colours: Mapping[str, str]) -> StyleFunction:

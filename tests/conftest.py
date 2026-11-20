@@ -75,4 +75,4 @@ def driver(nodes_module):
 
 @pytest.fixture(scope="session")
 def api_url():
-    return lambda fn: f"api.html#{fn.__qualname__}"
+    return lambda node, fn: fn and f"api.html#{fn.__qualname__}"
