@@ -35,3 +35,10 @@ def test_block_runs(code):
     with contextlib.redirect_stdout(output):
         exec(code, {"__name__": "__main__"})
     assert output.getvalue()
+
+
+def test_readme_shows_the_home_page_example():
+    """The README's images are drawn from this code by `just readme-images`."""
+    root = _DOCS.parent
+    (example,) = _BLOCK_RE.findall((root / "docs" / "index.md").read_text())
+    assert f"```python\n{example}```" in (root / "README.md").read_text()

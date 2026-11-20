@@ -12,6 +12,7 @@ src/dotdoc/
   html.py          — `graph_html`: inline SVG, preview overlays, zoom and expand buttons
   hamilton.py      — Hamilton style functions and `clean_legend` (`hamilton` extra)
 tests/             — one test file per module
+scripts/           — `readme_images.py`, which draws the README's images
 examples/          — the Hamilton dataflow that docs/hamilton.md draws and shows
 docs/              — Markdown; `python exec="on"` blocks draw the examples at build time
 site/              — built documentation output (gitignored)
@@ -31,6 +32,7 @@ All via `just`, prefixed with `uv run` unless the virtual environment is activat
 | `just test-cov` | `pytest` with coverage, `--cov-fail-under=90` |
 | `just doctest` | Doctests in `src/` |
 | `just docs` | `zensical build` |
+| `just readme-images` | Redraw the README's images from the home page's example |
 | `just release` | Tag the `pyproject.toml` version and publish a GitHub release for it, publishing to PyPI |
 
 Setup: `uv sync`.
@@ -63,6 +65,7 @@ uv (packaging), just (tasks), ruff (format + lint), pyright (types), pytest (tes
 - Docstrings are required (google convention), except in `tests/`.
 - A `python exec="on"` block in `docs/` runs during the docs build (markdown-exec) and its output goes into the page.
   The build passes even when a block raises, so `tests/test_docs.py` runs every such block.
+- The README mirrors `docs/index.md`; after changing its example, run `just readme-images`. A test checks the README's code matches.
 - The uv-pre-commit rev and the `uv_build` range in `[build-system]` must stay in step: the range is the rev's whole minor, `>=X.Y.0,<X.(Y+1).0`.
   `just bump` sets both from the installed uv after `uv self update`, updates the ruff and pyright hooks, relocks, and checks that `uv_build` still resolves under `exclude-newer`.
   The `[dependency-groups]` bounds are floors and are not bumped; see the comment above them.

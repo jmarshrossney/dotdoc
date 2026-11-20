@@ -44,6 +44,11 @@ docs:
 docs-serve:
   zensical serve
 
+# Redraw the README's images from the example on the documentation's home page.
+[group('docs')]
+readme-images:
+  python scripts/readme_images.py
+
 # Pin the uv hook and uv_build to the installed uv, update the other hooks, relock.
 [group('maintain')]
 bump:
