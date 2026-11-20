@@ -5,6 +5,7 @@ from dotdoc.hamilton import (
     attribute_style,
     clean_legend,
     compose_styles,
+    fill_by,
     fill_by_tag,
     link_style,
     summary,
@@ -159,6 +160,21 @@ class TestFillByTag:
         style = fill_by_tag("stage", {"model": "red"})
         node = type("Node", (), {"tags": {"stage": "other"}})()
         assert style(node=node, node_class="function") == ({}, "function", None)
+
+
+class TestFillBy:
+    def test_fills_by_the_computed_value(self):
+        style = fill_by(lambda node: node.name, {"a": "red"})
+        node = type("Node", (), {"name": "a"})()
+        assert style(node=node, node_class="function") == (
+            {"fillcolor": "red"},
+            "function",
+            "a",
+        )
+
+    def test_none_is_left_alone(self):
+        style = fill_by(lambda node: None, {"a": "red"})
+        assert style(node=None, node_class="function") == ({}, "function", None)
 
 
 @pytest.mark.dot

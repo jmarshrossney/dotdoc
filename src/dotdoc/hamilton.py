@@ -5,8 +5,9 @@ Hamilton's `Driver` display methods (`display_all_functions`,
 called once per node with that node and its class, and returning the node's
 Graphviz attributes, its base class and its legend entry. The functions here
 build style functions that link nodes to their documentation, give them a
-tooltip from their docstring, fill them by a tag or set any attribute by node
-name; `compose_styles` combines them with each other and with your own.
+tooltip from their docstring, fill them by a tag or any per-node value, and
+set any attribute by node name; `compose_styles` combines them with each other
+and with your own.
 
 Hamilton draws each legend entry with the style of the last node that named
 it, so once nodes are linked, every legend swatch carries some node's link and
@@ -36,6 +37,7 @@ __all__ = [
     "attribute_style",
     "clean_legend",
     "compose_styles",
+    "fill_by",
     "fill_by_tag",
     "link_style",
     "summary",
@@ -303,15 +305,53 @@ def _tooltip_text(lines: str | Sequence[str]) -> str:
     return "\\n".join(line.replace("\\", "\\\\") for line in lines)
 
 
-def fill_by_tag(tag: str, colours: Mapping[str, str]) -> StyleFunction:
-    """Build a style function that fills nodes by the value of a tag.
+def fill_by(
+    value: Callable[[graph_types.HamiltonNode], str | None],
+    colours: Mapping[str, str],
+) -> StyleFunction:
+    """Build a style function that fills nodes by a value computed per node.
 
-    A node whose `tag` value is a key of `colours` is filled with that colour
+    A node whose `value(node)` is a key of `colours` is filled with that colour
     and gets a legend entry named after the value. Other nodes are left alone.
 
     Hamilton names each legend entry's Graphviz node after the entry, so a
     value that is also the name of a node draws that node inside the legend:
     choose values that are not node names.
+
+    Args:
+        value: Receives a node and returns its value, or `None` for none.
+        colours: Value to fill colour, in any form Graphviz accepts.
+
+    Returns:
+        A style function to pass to Hamilton, alone or through
+        `compose_styles`.
+
+    Examples:
+        ```python
+        def kind(node):
+            return "input" if node.is_external_input else "step"
+
+        style = fill_by(kind, {"input": "#e7eef7", "step": "#d9ead3"})
+        digraph = dr.display_all_functions(custom_style_function=style)
+        ```
+    """
+
+    def style(
+        *, node: graph_types.HamiltonNode, node_class: str
+    ) -> tuple[dict[str, str], str | None, str | None]:
+        v = value(node)
+        if v is None or v not in colours:
+            return {}, node_class, None
+        return {"fillcolor": colours[v]}, node_class, v
+
+    return style
+
+
+def fill_by_tag(tag: str, colours: Mapping[str, str]) -> StyleFunction:
+    """Build a style function that fills nodes by the value of a tag.
+
+    `fill_by` with a node's `tag` value as its value; a value that is not a
+    string is ignored.
 
     Args:
         tag: The name of the tag, as given to Hamilton's `@tag`.
@@ -328,15 +368,11 @@ def fill_by_tag(tag: str, colours: Mapping[str, str]) -> StyleFunction:
         ```
     """
 
-    def style(
-        *, node: graph_types.HamiltonNode, node_class: str
-    ) -> tuple[dict[str, str], str | None, str | None]:
-        value = node.tags.get(tag)
-        if not isinstance(value, str) or value not in colours:
-            return {}, node_class, None
-        return {"fillcolor": colours[value]}, node_class, value
+    def value(node: graph_types.HamiltonNode) -> str | None:
+        v = node.tags.get(tag)
+        return v if isinstance(v, str) else None
 
-    return style
+    return fill_by(value, colours)
 
 
 _LEGEND_ATTR_RE = re.compile(r'(?:URL|tooltip)="(?:[^"\\]|\\.)*" ?')
