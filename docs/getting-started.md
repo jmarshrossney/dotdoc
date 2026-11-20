@@ -33,7 +33,7 @@ from dotdoc import autoref, graph_html
 
 drawing = graphviz.Digraph()
 drawing.node("graph_html", URL=autoref("dotdoc.html.graph_html"))
-html = graph_html(drawing, fullscreen=True)
+html = graph_html(drawing, controls=True)
 ```
 
 Write `html` into the page source, or return `mo.Html(html)` from a marimo notebook exported to the page.

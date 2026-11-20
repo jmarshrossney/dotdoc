@@ -9,7 +9,7 @@
 ```
 src/dotdoc/
   __init__.py      — public API: re-exports `graph_html`, `PREVIEW_OVERLAY`
-  html.py          — `graph_html`: inline SVG, preview overlays, full-screen button
+  html.py          — `graph_html`: inline SVG, preview overlays, zoom and expand buttons
   hamilton.py      — Hamilton style functions and `clean_legend` (`hamilton` extra)
 tests/             — one test file per module
 examples/          — marimo notebooks, exported into docs/ by `just docs`

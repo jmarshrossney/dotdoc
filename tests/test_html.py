@@ -30,7 +30,7 @@ def fragment(linked_digraph) -> str:
 
 
 def _drawing(fragment: str) -> ET.Element:
-    drawing = ET.fromstring(fragment).find("div")
+    drawing = ET.fromstring(fragment).find(".//div[@class='dotdoc-drawing']")
     assert drawing is not None
     return drawing
 
@@ -55,10 +55,10 @@ def test_only_linked_node_names_are_underlined(fragment):
     assert len(linked) == 3
 
 
-@pytest.mark.parametrize("fullscreen", [False, True])
-def test_no_square_brackets_outside_the_svg(linked_digraph, fullscreen):
+@pytest.mark.parametrize("controls", [False, True])
+def test_no_square_brackets_outside_the_svg(linked_digraph, controls):
     """Markdown escapes square brackets, even inside raw HTML."""
-    fragment = graph_html(linked_digraph, fullscreen=fullscreen)
+    fragment = graph_html(linked_digraph, controls=controls)
     assert "[" not in fragment.split("<svg", 1)[0]
 
 
@@ -69,7 +69,11 @@ def test_svg_scales_to_fit(fragment):
     assert "width" not in svg.attrib
     assert "height" not in svg.attrib
     assert "width:100%" in svg.attrib["style"]
-    assert re.search(r"max-width:[\d.]+pt", drawing.attrib["style"])
+    assert re.search(r"--dotdoc-width:[\d.]+pt;", drawing.attrib["style"])
+    _, _, width, height = map(float, svg.attrib["viewBox"].split())
+    ratio = re.search(r"--dotdoc-ratio:([\d.]+)", drawing.attrib["style"])
+    assert ratio is not None
+    assert float(ratio[1]) == pytest.approx(width / height, rel=1e-3)
 
 
 def test_one_overlay_per_linked_node(fragment):
@@ -164,21 +168,34 @@ def test_no_overlay_attributes(linked_digraph):
     assert all(set(a.attrib) == {"href", "aria-label", "style"} for a in overlays)
 
 
-def test_no_button_by_default(fragment):
-    assert ET.fromstring(fragment).find("button") is None
-    assert ":fullscreen" not in fragment
+def test_no_controls_by_default(fragment):
+    root = ET.fromstring(fragment)
+    assert root.find(".//button") is None
+    assert "onkeydown" not in root.attrib
+    assert "dotdoc-expanded" not in fragment
 
 
-def test_fullscreen_button(linked_digraph):
-    root = ET.fromstring(graph_html(linked_digraph, fullscreen=True))
-    button = root.find("button")
-    assert button is not None
-    assert "requestFullscreen" in button.attrib["onclick"]
-    assert [span.text for span in button] == ["Full screen", "Exit full screen"]
+def test_controls(linked_digraph):
+    root = ET.fromstring(graph_html(linked_digraph, controls=True))
+    expand, zoom_out, zoom_in = root.iter("button")
+    assert "toggle('dotdoc-expanded')" in expand.attrib["onclick"]
+    assert [span.text for span in expand] == ["Expand", "Close"]
+    assert zoom_out.attrib["aria-label"] == "Zoom out"
+    assert "Math.max(1,z/1.25)" in zoom_out.attrib["onclick"]
+    assert zoom_in.attrib["aria-label"] == "Zoom in"
+    assert "Math.min(8,z*1.25)" in zoom_in.attrib["onclick"]
+    assert "Escape" in root.attrib["onkeydown"]
     style = root.find("style")
     assert style is not None
     assert style.text is not None
-    assert ".dotdoc-graph:fullscreen" in style.text
+    assert ".dotdoc-graph.dotdoc-expanded{position:fixed" in style.text
+
+
+def test_drawing_is_in_a_scroll_area(fragment):
+    scroll = ET.fromstring(fragment).find("div")
+    assert scroll is not None
+    assert scroll.attrib["class"] == "dotdoc-scroll"
+    assert [child.attrib["class"] for child in scroll] == ["dotdoc-drawing"]
 
 
 @pytest.mark.parametrize("cls", [graphviz.Graph, graphviz.Digraph])

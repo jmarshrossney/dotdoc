@@ -43,29 +43,52 @@ _CSS = (
     ".dotdoc-graph svg a.dotdoc-link text:first-of-type{text-decoration:underline}"
     # An unfilled shape shows its tooltip only on its outline otherwise.
     ".dotdoc-graph svg a *{pointer-events:visible}"
+    # As wide as the page allows, up to the drawing's own size, times the zoom.
+    ".dotdoc-scroll{overflow:auto}"
+    ".dotdoc-drawing{position:relative;margin:0 auto;"
+    "width:calc(min(100%,var(--dotdoc-width,100%))*var(--dotdoc-zoom,1))}"
 )
 
-# Full screen: opaque, scrollable, and the drawing as wide as fits. The button
-# label is swapped by CSS, so leaving full screen with Esc updates it too.
-_FULLSCREEN_CSS = (
-    ".dotdoc-fullscreen{margin-bottom:0.5em}"
-    ".dotdoc-graph:fullscreen{overflow:auto;padding:1.5rem;"
-    "background:#fff;color:#000}"
-    ".dotdoc-graph:fullscreen .dotdoc-drawing"
-    "{width:min(100%,1400px);max-width:none!important;margin:0 auto}"
-    ".dotdoc-graph:fullscreen .dotdoc-enter,"
-    ".dotdoc-graph:not(:fullscreen) .dotdoc-exit{display:none}"
+# Expanded, the drawing covers the window, under the theme's previews, and is
+# as large as fits it, up or down. Labels are swapped by CSS.
+_CONTROLS_CSS = (
+    ".dotdoc-controls .md-button{margin:0 0.4em 0.5em 0;padding:0.2em 0.9em}"
+    ".dotdoc-graph.dotdoc-expanded{position:fixed;inset:0;z-index:4;"
+    "display:flex;flex-direction:column;padding:1rem;"
+    "background:var(--md-default-bg-color,#fff)}"
+    ".dotdoc-expanded .dotdoc-scroll{flex:1;min-height:0}"
+    ".dotdoc-expanded .dotdoc-drawing{width:calc("
+    "min(100%,(100vh - 5rem)*var(--dotdoc-ratio,1))*var(--dotdoc-zoom,1))}"
+    ".dotdoc-expanded .dotdoc-expand,"
+    ".dotdoc-graph:not(.dotdoc-expanded) .dotdoc-close{display:none}"
 )
 
-# An inline handler rather than a script, so it needs no JavaScript file and
-# survives a theme's instant navigation, which does not rerun page scripts.
-_FULLSCREEN_BUTTON = (
-    '<button type="button" class="dotdoc-fullscreen md-button" onclick="'
-    "var f=this.closest('.dotdoc-graph');"
-    "if(document.fullscreenElement===f)document.exitFullscreen();"
-    "else if(document.fullscreenEnabled)f.requestFullscreen()"
-    '"><span class="dotdoc-enter">Full screen</span>'
-    '<span class="dotdoc-exit">Exit full screen</span></button>'
+
+def _zoom(operation: str) -> str:
+    return (
+        "var d=this.closest('.dotdoc-graph').querySelector('.dotdoc-drawing');"
+        "var z=+d.style.getPropertyValue('--dotdoc-zoom')||1;"
+        f"d.style.setProperty('--dotdoc-zoom',{operation})"
+    )
+
+
+# Inline handlers rather than a script, so they need no JavaScript file and
+# survive a theme's instant navigation, which does not rerun page scripts.
+_CONTROLS = (
+    '<div class="dotdoc-controls">'
+    '<button type="button" class="md-button" '
+    "onclick=\"this.closest('.dotdoc-graph').classList.toggle('dotdoc-expanded')\">"
+    '<span class="dotdoc-expand">Expand</span>'
+    '<span class="dotdoc-close">Close</span></button>'
+    '<button type="button" class="md-button" aria-label="Zoom out" '
+    f'onclick="{_zoom("Math.max(1,z/1.25)")}">&#8722;</button>'
+    '<button type="button" class="md-button" aria-label="Zoom in" '
+    f'onclick="{_zoom("Math.min(8,z*1.25)")}">+</button>'
+    "</div>"
+)
+
+_CLOSE_ON_ESCAPE = (
+    " onkeydown=\"if(event.key==='Escape')this.classList.remove('dotdoc-expanded')\""
 )
 
 
@@ -115,6 +138,13 @@ def _numbers(text: str) -> list[float]:
     return [float(v) for v in text.replace(",", " ").split()]
 
 
+def _view_box(svg: str) -> list[float]:
+    viewbox = _VIEWBOX_RE.search(svg)
+    if viewbox is None:
+        raise ValueError("Graphviz drew an SVG without the expected layout.")
+    return _numbers(viewbox["box"])
+
+
 def _name_box(obj: Mapping[str, Any]) -> tuple[float, float, float, float]:
     """Return `(left, top, width, height)` of a node's first label line.
 
@@ -154,10 +184,10 @@ def _overlays(
     SVG's `graph0` transform into percentages of its `viewBox`, so they scale
     with the drawing.
     """
-    viewbox, transform = _VIEWBOX_RE.search(svg), _TRANSFORM_RE.search(svg)
-    if viewbox is None or transform is None:
+    vx, vy, vw, vh = _view_box(svg)
+    transform = _TRANSFORM_RE.search(svg)
+    if transform is None:
         raise ValueError("Graphviz drew an SVG without the expected layout.")
-    vx, vy, vw, vh = _numbers(viewbox["box"])
     sx, sy = _numbers(transform["scale"])
     tx, ty = _numbers(transform["translate"])
     layout = json.loads(drawing.pipe(format="json", encoding="utf-8"))
@@ -189,7 +219,7 @@ def graph_html(
     drawing: graphviz.Source | graphviz.Graph | graphviz.Digraph,
     *,
     overlay: Mapping[str, str] | None = PREVIEW_OVERLAY,
-    fullscreen: bool = False,
+    controls: bool = False,
 ) -> str:
     """Render a Graphviz drawing as an HTML fragment for a documentation page.
 
@@ -215,14 +245,15 @@ def graph_html(
         overlay: Extra attributes for each overlay link, or `None` for none.
             The default turns on instant previews in Zensical and Material for
             MkDocs.
-        fullscreen: Add a button above the drawing that shows it full screen.
-            The button carries the `md-button` class, so Zensical and Material
-            for MkDocs style it; it does nothing in a browser that cannot show
-            an element full screen.
+        controls: Add buttons above the drawing that zoom in and out of it
+            and expand it to cover the window, for drawings too large to read
+            in the page; Esc closes it again. Links and previews work at any
+            size. The buttons carry the `md-button` class, so Zensical and
+            Material for MkDocs style them.
 
     Returns:
         A `<div class="dotdoc-graph">` holding a short stylesheet, the
-        optional button, and the SVG with its overlays, with no blank lines, so
+        optional buttons, and the SVG with its overlays, with no blank lines, so
         a Markdown page can hold it as one raw HTML block.
 
     Raises:
@@ -247,16 +278,19 @@ def graph_html(
     svg = "\n".join(line for line in (root + svg[root_end:]).splitlines() if line)
     overlays = _overlays(drawing, svg, overlay)
     svg = _unlink_nodes(svg)
-    size = f"max-width:{width}pt;" if width is not None else ""
-    css = _CSS + (_FULLSCREEN_CSS if fullscreen else "")
+    _, _, view_width, view_height = _view_box(svg)
+    size = f"--dotdoc-width:{width}pt;" if width is not None else ""
+    size += f"--dotdoc-ratio:{view_width / view_height:.4f}"
+    css = _CSS + (_CONTROLS_CSS if controls else "")
     return "".join(
         [
-            '<div class="dotdoc-graph">',
+            f'<div class="dotdoc-graph"{_CLOSE_ON_ESCAPE if controls else ""}>',
             f"<style>{css}</style>",
-            _FULLSCREEN_BUTTON if fullscreen else "",
-            f'<div class="dotdoc-drawing" style="position:relative;{size}">',
+            _CONTROLS if controls else "",
+            '<div class="dotdoc-scroll">',
+            f'<div class="dotdoc-drawing" style="{size}">',
             svg,
             *overlays,
-            "</div></div>",
+            "</div></div></div>",
         ]
     )

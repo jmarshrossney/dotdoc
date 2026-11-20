@@ -76,7 +76,7 @@ drawing.edges(
     ]
 )
 
-print(graph_html(drawing, fullscreen=True))
+print(graph_html(drawing, controls=True))
 ```
 
 ## 1. Each node is given a target
@@ -123,14 +123,16 @@ Each linked node's name is underlined, whatever the theme does to links, to show
 
 ## 5. Everything is returned as one piece of HTML
 
-`graph_html` returns a single `<div>` holding a short stylesheet, the optional full-screen button, and the SVG with its overlays:
+`graph_html` returns a single `<div>` holding a short stylesheet, the optional buttons, and the SVG with its overlays:
 
 ```html
 <div class="dotdoc-graph">
   <style>...</style>
-  <div class="dotdoc-drawing" style="position:relative;...">
-    <svg>...</svg>
-    <autoref identifier="dotdoc.html.graph_html" aria-label="graph_html" style="position:absolute;..." data-preview=""></autoref>
+  <div class="dotdoc-scroll">
+    <div class="dotdoc-drawing" style="--dotdoc-width:...;--dotdoc-ratio:...">
+      <svg>...</svg>
+      <autoref identifier="dotdoc.html.graph_html" aria-label="graph_html" style="position:absolute;..." data-preview=""></autoref>
+    </div>
   </div>
 </div>
 ```
@@ -139,7 +141,9 @@ It has no blank lines, so Markdown passes it through as one block of raw HTML.
 A notebook cell outputs it, the notebook's export writes it into the page, and the documentation build resolves the `<autoref>` elements.
 The overlays have to be in the page when it loads for the theme to find them, which is why the fragment is written into the page rather than added by a script.
 
-The full-screen button is a single inline `onclick` handler, with the button's label swapped by CSS, so it needs no JavaScript file.
+With `controls=True`, buttons above the drawing zoom it in and out and expand it to cover the window.
+Zooming scales the drawing and its overlays together, inside an area that scrolls, so links and previews work at any size.
+Each button is a single inline `onclick` handler, so they need no JavaScript file.
 
 ## Hamilton drawings
 

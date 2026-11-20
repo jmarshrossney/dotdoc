@@ -101,7 +101,7 @@ def _(mo):
     - `fill_by_tag` fills each node by its `stage` tag, with an entry in the legend.
 
     Hamilton draws each legend entry with the style of the last node that named it, links and tooltips included, so `clean_legend` strips those from the legend.
-    `fullscreen=True` adds a button that shows the drawing full screen.
+    `controls=True` adds buttons that zoom in and out of the drawing and expand it to cover the window.
     """)
     return
 
@@ -132,7 +132,7 @@ def _(
     )
     pipeline = clean_legend(dr.display_all_functions(custom_style_function=style))
 
-    mo.Html(graph_html(pipeline, fullscreen=True))
+    mo.Html(graph_html(pipeline, controls=True))
     return
 
 
