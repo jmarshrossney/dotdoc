@@ -17,6 +17,11 @@ print(graph_html(drawing))
 
 Hover over a node's name to preview its API entry, and click it to go there.
 
+!!! warning "Only tested with Zensical"
+
+    dotdoc has only been tested on sites built with [Zensical](https://zensical.org).
+    If you'd like to use it with Sphinx, MkDocs 2, or anywhere else, please [open an issue](https://github.com/jmarshrossney/dotdoc/issues), or better still a pull request.
+
 ## Installation
 
 === "uv"

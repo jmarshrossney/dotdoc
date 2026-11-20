@@ -19,6 +19,12 @@ The drawing below is of a Hamilton dataflow that draws a Hamilton DAG with dotdo
 Each step is named after the function it calls, and its name links to that function's API entry, through the `link` argument of [`link_style`][dotdoc.hamilton.link_style].
 Hover over a name to preview the entry.
 
+??? example "The dataflow, `examples/draw_dag.py`"
+
+    ```python exec="on" result="python"
+    print(open("examples/draw_dag.py").read())
+    ```
+
 ```python exec="on" html="1" source="tabbed-right" result="html"
 import sys  # markdown-exec: hide
 
@@ -41,10 +47,4 @@ result = dr.execute(
 )
 
 print(result["graph_html"])
-```
-
-The dataflow, `examples/draw_dag.py`:
-
-```python exec="on" result="python"
-print(open("examples/draw_dag.py").read())
 ```
