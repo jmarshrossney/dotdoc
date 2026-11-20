@@ -121,6 +121,9 @@ Following a link is then the same gesture as previewing it, and the page avoids 
 
 Each linked node's name is underlined, whatever the theme does to links, to show where to click.
 
+Graphviz's white background is dropped, and what it draws in its default black, such as edges, outlines and text that is not on a filled shape, is redrawn in the page's text colour (`currentColor`), so the drawing follows the theme's light and dark schemes.
+Colours set in the drawing are kept.
+
 ## 5. Everything is returned as one piece of HTML
 
 `graph_html` returns a single `<div>` holding a short stylesheet, the optional buttons, and the SVG with its overlays:

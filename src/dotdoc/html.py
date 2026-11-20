@@ -39,7 +39,8 @@ _TRANSFORM_RE = re.compile(
 # brackets anywhere in the fragment: Markdown escapes them, even inside
 # `<style>` and attributes.
 _CSS = (
-    ".dotdoc-graph svg a{text-decoration:none}"
+    # Themes colour links too, which `currentColor` in the drawing would pick up.
+    ".dotdoc-graph svg a{text-decoration:none;color:inherit}"
     ".dotdoc-graph svg a.dotdoc-link text:first-of-type{text-decoration:underline}"
     # An unfilled shape shows its tooltip only on its outline otherwise.
     ".dotdoc-graph svg a *{pointer-events:visible}"
@@ -124,6 +125,40 @@ def _identifier(url: str) -> str | None:
     if url.startswith(AUTOREF_PREFIX):
         return url.removeprefix(AUTOREF_PREFIX)
     return None
+
+
+_GROUP_RE = re.compile(r'<g id="[^"]*" class="(?P<kind>node|edge|cluster|graph)"')
+_SHAPE_RE = re.compile(r'<(?:ellipse|polygon|polyline|path) fill="(?P<fill>[^"]*)"')
+_BACKGROUND = '<polygon fill="white" stroke="none"'
+
+
+def _theme_colours(svg: str) -> str:
+    """Draw Graphviz's default black in the page's text colour, on no background.
+
+    Strokes and arrowheads drawn in black, and text that sits on the page
+    rather than on a filled shape, become `currentColor`, which follows the
+    theme's light or dark scheme. Text on a filled shape keeps its colour, to
+    stay readable on light fills. Graphviz's white background is dropped.
+    """
+    lines = []
+    kind, filled, shape_seen = "graph", False, False
+    for line in svg.splitlines():
+        if group := _GROUP_RE.match(line):
+            kind, filled, shape_seen = group["kind"], False, False
+        elif line.startswith("<text"):
+            if not filled and ' fill="' not in line:
+                line = line.replace("<text", '<text fill="currentColor"', 1)
+        elif shape := _SHAPE_RE.match(line):
+            if kind == "graph" and not shape_seen and line.startswith(_BACKGROUND):
+                shape_seen = True
+                continue
+            if kind in ("node", "cluster") and not shape_seen:
+                filled = shape["fill"] not in ("none", "transparent")
+            shape_seen = True
+            line = line.replace('stroke="black"', 'stroke="currentColor"')
+            line = line.replace('fill="black"', 'fill="currentColor"')
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def _unlink_nodes(svg: str) -> str:
@@ -220,6 +255,7 @@ def graph_html(
     *,
     overlay: Mapping[str, str] | None = PREVIEW_OVERLAY,
     controls: bool = False,
+    theme_colours: bool = True,
 ) -> str:
     """Render a Graphviz drawing as an HTML fragment for a documentation page.
 
@@ -250,6 +286,11 @@ def graph_html(
             in the page; Esc closes it again. Links and previews work at any
             size. The buttons carry the `md-button` class, so Zensical and
             Material for MkDocs style them.
+        theme_colours: Drop Graphviz's white background, and draw what it
+            draws in its default black in the page's text colour instead, so
+            the drawing follows a theme's light and dark schemes. Text on a
+            filled shape keeps its colour, and colours set in the drawing are
+            kept. `False` keeps Graphviz's colours.
 
     Returns:
         A `<div class="dotdoc-graph">` holding a short stylesheet, the
@@ -278,6 +319,8 @@ def graph_html(
     svg = "\n".join(line for line in (root + svg[root_end:]).splitlines() if line)
     overlays = _overlays(drawing, svg, overlay)
     svg = _unlink_nodes(svg)
+    if theme_colours:
+        svg = _theme_colours(svg)
     _, _, view_width, view_height = _view_box(svg)
     size = f"--dotdoc-width:{width}pt;" if width is not None else ""
     size += f"--dotdoc-ratio:{view_width / view_height:.4f}"

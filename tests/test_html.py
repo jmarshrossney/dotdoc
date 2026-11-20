@@ -47,7 +47,7 @@ def test_only_linked_node_names_are_underlined(fragment):
     style = ET.fromstring(fragment).find("style")
     assert style is not None
     assert style.text is not None
-    assert "svg a{text-decoration:none}" in style.text
+    assert "svg a{text-decoration:none;color:inherit}" in style.text
     assert "a.dotdoc-link text:first-of-type{text-decoration:underline}" in style.text
     svg = _drawing(fragment).find(f"{_SVG}svg")
     assert svg is not None
@@ -262,3 +262,49 @@ def test_plain_and_autoref_links_mix():
     assert [o.attrib["href"] for o in drawing_el.findall("a")] == [
         "https://example.org/b"
     ]
+
+
+def _colours_drawing() -> graphviz.Digraph:
+    drawing = graphviz.Digraph()
+    drawing.node("filled", style="filled", fillcolor="#fde9c4")
+    drawing.node("plain")
+    drawing.node("red", color="red", fontcolor="red")
+    cluster = graphviz.Digraph(name="cluster_group", graph_attr={"label": "group"})
+    cluster.node("inside")
+    drawing.subgraph(cluster)
+    drawing.edge("filled", "plain", label="edge")
+    drawing.edge("plain", "inside")
+    return drawing
+
+
+def _texts(svg: ET.Element) -> dict[str | None, str | None]:
+    return {t.text: t.get("fill") for t in svg.iter(f"{_SVG}text")}
+
+
+def test_theme_colours():
+    svg = _drawing(graph_html(_colours_drawing())).find(f"{_SVG}svg")
+    assert svg is not None
+    # No background.
+    assert not any(p.get("fill") == "white" for p in svg.iter(f"{_SVG}polygon"))
+    # Default black follows the page; set colours are kept.
+    strokes = {el.get("stroke") for el in svg.iter() if el.get("stroke")}
+    assert "black" not in strokes
+    assert {"currentColor", "red"} <= strokes
+    assert "black" not in {el.get("fill") for el in svg.iter()}
+    # Text on the page follows it; text on a fill keeps Graphviz's black.
+    texts = _texts(svg)
+    assert texts["plain"] == "currentColor"
+    assert texts["edge"] == "currentColor"
+    assert texts["group"] == "currentColor"
+    assert texts["inside"] == "currentColor"
+    assert texts["filled"] is None
+    assert texts["red"] == "red"
+
+
+def test_graphviz_colours():
+    svg = _drawing(graph_html(_colours_drawing(), theme_colours=False)).find(
+        f"{_SVG}svg"
+    )
+    assert svg is not None
+    assert "currentColor" not in ET.tostring(svg, encoding="unicode")
+    assert any(p.get("fill") == "white" for p in svg.iter(f"{_SVG}polygon"))
