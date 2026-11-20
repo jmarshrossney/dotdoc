@@ -1,6 +1,6 @@
 # How it works
 
-Graphviz lays out and draws the picture, Zensical (or MkDocs with mkdocs-autorefs) resolves links and shows previews, and dotdoc joins the two.
+Graphviz lays out and draws the picture, Zensical resolves links and shows previews, and dotdoc joins the two.
 This page goes through what dotdoc does, step by step.
 
 The drawing below is made by dotdoc, from the code in its "Source" tab, when the documentation is built.
@@ -28,9 +28,9 @@ drawing.node(
     "autoref", "autoref\nidentifier as URL", URL=api("html.autoref"), **dotdoc_node
 )
 drawing.node(
-    "link_style",
-    "link_style\nURL for each Hamilton node",
-    URL=api("hamilton.link_style"),
+    "api_autoref",
+    "api_autoref\nidentifier of a function",
+    URL=api("functions.api_autoref"),
     **dotdoc_node,
 )
 drawing.node("graph_html", URL=api("html.graph_html"), **dotdoc_node)
@@ -62,8 +62,8 @@ drawing.node("theme", "theme\npreviews on hover", **other_node)
 
 drawing.edges(
     [
+        ("api_autoref", "autoref"),
         ("autoref", "graph_html"),
-        ("link_style", "graph_html"),
         ("graph_html", "svg"),
         ("graph_html", "layout"),
         ("layout", "overlays"),
@@ -95,7 +95,13 @@ The documentation build writes an identifier's link relative to each page, so it
 Such links work only in pages the build writes.
 An ordinary URL must already be right from the built page: `api.html#…` with `use_directory_urls = false`, `../api/#…` with it on.
 
-For a Hamilton DAG, [`link_style`][dotdoc.hamilton.link_style] sets the `URL` of every node that a function defines, by default to that function's identifier, through [`api_autoref`][dotdoc.hamilton.api_autoref]; see [Hamilton](hamilton.md).
+[`api_autoref`][dotdoc.functions.api_autoref] makes the identifier of a Python function's API entry:
+
+```python
+drawing.node("graph_html", URL=api_autoref(graph_html))
+```
+
+For a Hamilton DAG, [`link_style`][dotdoc.hamilton.link_style] does this for every node that a function defines; see [Hamilton](hamilton.md).
 
 ## 2. Graphviz draws the picture, and says where everything is
 

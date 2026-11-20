@@ -1,14 +1,12 @@
 import pytest
 
 from dotdoc.hamilton import (
-    api_autoref,
     attribute_style,
     clean_legend,
     compose_styles,
     fill_by,
     fill_by_tag,
     link_style,
-    summary,
     tooltip_style,
 )
 
@@ -61,14 +59,6 @@ class TestAttributeStyle:
         style = attribute_style("penwidth", {"a": "3"})
         node = type("Node", (), {"name": "b"})()
         assert style(node=node, node_class="function") == ({}, "function", None)
-
-
-class TestSummary:
-    def test_none_without_a_docstring(self):
-        def f():
-            pass
-
-        assert summary(f) is None
 
 
 @pytest.fixture(scope="module")
@@ -196,10 +186,6 @@ class TestCleanLegend:
         )
         body = list(digraph.body)
         assert clean_legend(digraph).body == body
-
-
-def test_api_autoref_is_the_dotted_path():
-    assert api_autoref(summary) == "autoref:dotdoc.hamilton.summary"
 
 
 @pytest.mark.dot

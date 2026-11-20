@@ -6,4 +6,6 @@
 
 ::: dotdoc.html
 
+::: dotdoc.functions
+
 ::: dotdoc.hamilton

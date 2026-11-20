@@ -1,7 +1,7 @@
 """Render a Graphviz drawing as an HTML fragment for a documentation page.
 
 `graph_html` inlines the SVG and lays an invisible HTML link over the name of
-each node with a `URL` attribute, so that the name is a link and a theme's link
+each node with a `URL` attribute, so that the name is a link and Zensical's link
 previews work on it.
 
 A node's `URL` may name an mkdocstrings identifier rather than a URL, through
@@ -21,8 +21,7 @@ import graphviz
 __all__ = ["AUTOREF_PREFIX", "PREVIEW_OVERLAY", "DarkColours", "autoref", "graph_html"]
 
 PREVIEW_OVERLAY: Mapping[str, str] = MappingProxyType({"data-preview": ""})
-"""Overlay attributes that turn on instant previews in Zensical and Material for
-MkDocs."""
+"""Overlay attributes that turn on Zensical's instant previews."""
 
 AUTOREF_PREFIX = "autoref:"
 """Marks a node's `URL` as an identifier for the documentation build to resolve."""
@@ -101,11 +100,10 @@ def autoref(identifier: str) -> str:
     """Return a node `URL` that links to an identifier's documentation.
 
     `graph_html` writes the node's overlay as an `<autoref>` element, which
-    mkdocs-autorefs, and Zensical's own autorefs, replace with a link to the
-    identifier's entry, relative to the page and whatever the site's URL
-    style. An identifier the build cannot find is reported as a warning.
-    The links work only in a page those tools build: in a notebook, for
-    instance, they lead nowhere.
+    Zensical replaces with a link to the identifier's entry, relative to the
+    page and whatever the site's URL style. An identifier the build cannot
+    find is reported as a warning. The links work only in a page Zensical
+    builds: in a notebook, for instance, they lead nowhere.
 
     Args:
         identifier: What the documentation registers the entry under; for
@@ -318,10 +316,9 @@ def graph_html(
     the link: an invisible HTML link, carrying `overlay`'s attributes, is laid
     over it and the name is underlined, whatever the theme does to links. The
     rest of the node is not a link, so following one is always the same
-    gesture as previewing it, and themes that preview a link's target on hover
-    only handle HTML links anyway. The overlays must be in the page when it
-    loads, so write the fragment into the page source or a notebook's output
-    rather than adding it from a script.
+    gesture as previewing it, and Zensical previews only HTML links anyway.
+    The overlays must be in the page when it loads, so write the fragment
+    into the page source rather than adding it from a script.
 
     A URL is written into the page as it is, so it must work from the built
     page; a URL made by `autoref` names an identifier for the documentation
@@ -332,13 +329,12 @@ def graph_html(
         drawing: The Graphviz drawing to render. Any graph works, directed or
             not, cycles included.
         overlay: Extra attributes for each overlay link, or `None` for none.
-            The default turns on instant previews in Zensical and Material for
-            MkDocs.
+            The default turns on Zensical's instant previews.
         controls: Add buttons above the drawing that zoom in and out of it
             and expand it to cover the window, for drawings too large to read
             in the page; Esc closes it again. Links and previews work at any
-            size. The buttons carry the `md-button` class, so Zensical and
-            Material for MkDocs style them.
+            size. The buttons carry the `md-button` class, so Zensical styles
+            them.
         theme_colours: Drop Graphviz's white background, and draw what it
             draws in its default black in the page's text colour instead, so
             the drawing follows a theme's light and dark schemes. Text on a

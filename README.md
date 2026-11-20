@@ -6,7 +6,7 @@
 [![Docs](https://github.com/jmarshrossney/dotdoc/actions/workflows/docs.yml/badge.svg)](https://jmarshrossney.github.io/dotdoc)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/jmarshrossney/dotdoc/blob/main/LICENSE)
 
-Make Graphviz drawings a navigable part of your documentation: nodes link to their API entries, with previews on hover.
+Make Graphviz drawings a navigable part of your Zensical documentation: nodes link to their API entries, with previews on hover.
 
 ```python
 import graphviz
@@ -29,7 +29,8 @@ print(graph_html(drawing))
 In the [documentation](https://jmarshrossney.github.io/dotdoc), each node's name links to its API entry, with a preview on hover.
 
 > [!IMPORTANT]
-> dotdoc has only been tested on sites built with [Zensical](https://zensical.org).
+> dotdoc was written to link drawings of [Apache Hamilton](https://hamilton.apache.org/) DAGs to their API entries in documentation built with [Zensical](https://zensical.org), and that is the only setting it has been tested in.
+> Its core, `graph_html`, does not depend on Hamilton, and may well work elsewhere, but that has not been tried.
 > If you'd like to use it with Sphinx, MkDocs 2, or anywhere else, please [open an issue](https://github.com/jmarshrossney/dotdoc/issues), or better still a pull request.
 
 ## Installation

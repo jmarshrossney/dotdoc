@@ -3,7 +3,7 @@
 use_directory_urls = false
 
 site_name = "dotdoc"
-site_description = "Make Graphviz drawings a navigable part of your documentation: nodes link to their API entries, with previews on hover."
+site_description = "Make Graphviz drawings a navigable part of your Zensical documentation: nodes link to their API entries, with previews on hover."
 site_author = "Joe Marsh Rossney"
 site_url = "https://jmarshrossney.github.io/dotdoc"
 

@@ -19,7 +19,7 @@ def _api_entry(node: HamiltonNode, step: Callable | None) -> str | None:
     """Link a step to the API entry of the dotdoc function it is named after."""
     for module in (dotdoc.hamilton, dotdoc):
         if step and (function := getattr(module, step.__name__, None)) is not None:
-            return dotdoc.hamilton.api_autoref(function)
+            return dotdoc.api_autoref(function)
     return None
 
 

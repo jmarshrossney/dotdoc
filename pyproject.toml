@@ -7,7 +7,7 @@ build-backend = "uv_build"
 [project]
 name = "dotdoc"
 version = "0.1.0rc1"
-description = "Make Graphviz drawings a navigable part of your documentation: nodes link to their API entries, with previews on hover."
+description = "Make Graphviz drawings a navigable part of your Zensical documentation: nodes link to their API entries, with previews on hover."
 authors = [
     { name = "Joe Marsh Rossney", email = "17361029+jmarshrossney@users.noreply.github.com" }
 ]
@@ -18,7 +18,7 @@ requires-python = ">=3.12"
 dependencies = [
     "graphviz>=0.20",
 ]
-keywords = ["graphviz", "documentation", "hamilton", "mkdocs", "zensical"]
+keywords = ["graphviz", "documentation", "hamilton", "zensical"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",

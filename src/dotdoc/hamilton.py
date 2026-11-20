@@ -16,7 +16,6 @@ tooltip. `clean_legend` strips them from the drawing Hamilton returns.
 Needs the `hamilton` extra: `pip install "dotdoc[hamilton]"`.
 """
 
-import inspect
 import re
 from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING
@@ -24,7 +23,7 @@ from typing import TYPE_CHECKING
 from hamilton import graph_types
 from hamilton.driver import Driver
 
-from .html import autoref
+from .functions import api_autoref, summary
 
 if TYPE_CHECKING:
     import graphviz
@@ -33,14 +32,12 @@ __all__ = [
     "LinkFunction",
     "StyleFunction",
     "TooltipFunction",
-    "api_autoref",
     "attribute_style",
     "clean_legend",
     "compose_styles",
     "fill_by",
     "fill_by_tag",
     "link_style",
-    "summary",
     "tooltip_style",
 ]
 
@@ -179,28 +176,6 @@ def attribute_style(attribute: str, values: Mapping[str, str]) -> StyleFunction:
     return style
 
 
-def api_autoref(function: Callable) -> str:
-    """Link a function to its mkdocstrings entry, wherever that is in the site.
-
-    The identifier is the dotted path of the function where it is defined,
-    `function.__module__` then `function.__qualname__`, which is where
-    mkdocstrings registers it when that module is documented. See
-    `dotdoc.html.autoref`.
-
-    Args:
-        function: The function to link to.
-
-    Returns:
-        A `URL` for `graph_html` to write as an `<autoref>` element.
-
-    Examples:
-        >>> from dotdoc import graph_html
-        >>> api_autoref(graph_html)
-        'autoref:dotdoc.html.graph_html'
-    """
-    return autoref(f"{function.__module__}.{function.__qualname__}")
-
-
 def link_style(dr: Driver, link: LinkFunction | None = None) -> StyleFunction:
     """Build a style function that links nodes to their documentation.
 
@@ -213,8 +188,9 @@ def link_style(dr: Driver, link: LinkFunction | None = None) -> StyleFunction:
             inputs, config and field nodes from `@extract_fields`, and returns
             its URL, or `None` for no link. The default links each node a
             function defines to the function's mkdocstrings entry, through
-            `api_autoref`; a function documented under another path, such as
-            where a package re-exports it, needs a link function of its own.
+            `dotdoc.api_autoref`; a function documented under another path,
+            such as where a package re-exports it, needs a link function of its
+            own.
 
     Returns:
         A style function to pass to Hamilton, alone or through
@@ -243,34 +219,6 @@ def link_style(dr: Driver, link: LinkFunction | None = None) -> StyleFunction:
     return attribute_style("URL", {k: v for k, v in urls.items() if v is not None})
 
 
-def summary(function: Callable) -> str | None:
-    """Return the first paragraph of a function's docstring, as plain text.
-
-    The paragraph is put on one line and backticks are dropped, since a tooltip
-    shows them literally.
-
-    Args:
-        function: The function whose docstring to read.
-
-    Returns:
-        The summary, or `None` if the function has no docstring.
-
-    Examples:
-        >>> def f():
-        ...     '''Add one to `x`,
-        ...     then double it.
-        ...
-        ...     More detail.
-        ...     '''
-        >>> summary(f)
-        'Add one to x, then double it.'
-    """
-    doc = inspect.getdoc(function)
-    if not doc:
-        return None
-    return " ".join(doc.split("\n\n", 1)[0].split()).replace("`", "")
-
-
 def tooltip_style(dr: Driver, tooltip: TooltipFunction | None = None) -> StyleFunction:
     r"""Build a style function that gives nodes a tooltip.
 
@@ -287,7 +235,7 @@ def tooltip_style(dr: Driver, tooltip: TooltipFunction | None = None) -> StyleFu
             for inputs, config and field nodes from `@extract_fields`, and
             returns its tooltip as a string or a sequence of lines, or `None`
             for no tooltip. The default gives each node a function defines the
-            `summary` of that function.
+            `dotdoc.summary` of that function.
 
     Returns:
         A style function to pass to Hamilton, alone or through
