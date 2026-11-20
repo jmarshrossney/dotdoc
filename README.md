@@ -1,5 +1,11 @@
 # dotdoc
 
+[![PyPI version](https://img.shields.io/pypi/v/dotdoc)](https://pypi.org/project/dotdoc/)
+[![Python versions](https://img.shields.io/pypi/pyversions/dotdoc)](https://pypi.org/project/dotdoc/)
+[![CI](https://github.com/jmarshrossney/dotdoc/actions/workflows/ci.yml/badge.svg)](https://github.com/jmarshrossney/dotdoc/actions/workflows/ci.yml)
+[![Docs](https://github.com/jmarshrossney/dotdoc/actions/workflows/docs.yml/badge.svg)](https://jmarshrossney.github.io/dotdoc)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/jmarshrossney/dotdoc/blob/main/LICENSE)
+
 Make Graphviz drawings a navigable part of your documentation: nodes link to their API entries, with previews on hover.
 
 ```python
@@ -21,6 +27,10 @@ print(graph_html(drawing))
 </picture>
 
 In the [documentation](https://jmarshrossney.github.io/dotdoc), each node's name links to its API entry, with a preview on hover.
+
+> [!IMPORTANT]
+> dotdoc has only been tested on sites built with [Zensical](https://zensical.org).
+> If you'd like to use it with Sphinx, MkDocs 2, or anywhere else, please [open an issue](https://github.com/jmarshrossney/dotdoc/issues), or better still a pull request.
 
 ## Installation
 
