@@ -2,8 +2,10 @@ import pytest
 
 from dotdoc.hamilton import (
     api_autoref,
+    attribute_style,
     clean_legend,
     compose_styles,
+    fill_by,
     fill_by_tag,
     link_style,
     summary,
@@ -45,6 +47,22 @@ class TestComposeStyles:
         )
 
 
+class TestAttributeStyle:
+    def test_sets_the_attribute_of_named_nodes(self):
+        style = attribute_style("penwidth", {"a": "3"})
+        node = type("Node", (), {"name": "a"})()
+        assert style(node=node, node_class="function") == (
+            {"penwidth": "3"},
+            "function",
+            None,
+        )
+
+    def test_leaves_other_nodes_alone(self):
+        style = attribute_style("penwidth", {"a": "3"})
+        node = type("Node", (), {"name": "b"})()
+        assert style(node=node, node_class="function") == ({}, "function", None)
+
+
 class TestSummary:
     def test_none_without_a_docstring(self):
         def f():
@@ -82,7 +100,9 @@ class TestLinks:
         assert "URL=" not in _node_line(styled_source, "method")
 
     def test_link_returning_none_draws_no_link(self, driver):
-        links = link_style(driver, lambda fn: None if fn.__name__ == "split" else "x")
+        links = link_style(
+            driver, lambda node, fn: None if node.name == "split" else "x"
+        )
         source = driver.display_all_functions(custom_style_function=links).source
         assert "URL=" not in _node_line(source, "split")
         assert "URL=x" in _node_line(source, "undocumented")
@@ -105,9 +125,20 @@ class TestTooltips:
         assert "tooltip=" not in _node_line(styled_source, "left")
 
     def test_tooltip_function_is_a_parameter(self, driver):
-        tips = tooltip_style(driver, lambda fn: fn.__name__.upper())
+        tips = tooltip_style(driver, lambda node, fn: node.name.upper())
         source = driver.display_all_functions(custom_style_function=tips).source
         assert "tooltip=UNDOCUMENTED" in _node_line(source, "undocumented")
+
+    def test_field_nodes_get_the_node_and_no_function(self, driver):
+        tips = tooltip_style(driver, lambda node, fn: f"{node.name} {fn is None}")
+        source = driver.display_all_functions(custom_style_function=tips).source
+        assert 'tooltip="left True"' in _node_line(source, "left")
+        assert 'tooltip="split False"' in _node_line(source, "split")
+
+    def test_lines_are_joined_with_graphviz_line_breaks(self, driver):
+        tips = tooltip_style(driver, lambda node, fn: ["a", "b\\c"])
+        source = driver.display_all_functions(custom_style_function=tips).source
+        assert r'tooltip="a\nb\\c"' in _node_line(source, "split")
 
 
 @pytest.mark.dot
@@ -129,6 +160,21 @@ class TestFillByTag:
         style = fill_by_tag("stage", {"model": "red"})
         node = type("Node", (), {"tags": {"stage": "other"}})()
         assert style(node=node, node_class="function") == ({}, "function", None)
+
+
+class TestFillBy:
+    def test_fills_by_the_computed_value(self):
+        style = fill_by(lambda node: node.name, {"a": "red"})
+        node = type("Node", (), {"name": "a"})()
+        assert style(node=node, node_class="function") == (
+            {"fillcolor": "red"},
+            "function",
+            "a",
+        )
+
+    def test_none_is_left_alone(self):
+        style = fill_by(lambda node: None, {"a": "red"})
+        assert style(node=None, node_class="function") == ({}, "function", None)
 
 
 @pytest.mark.dot
