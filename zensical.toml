@@ -125,7 +125,8 @@ custom_checkbox = true
 # ------------
 [project.plugins.mkdocstrings.handlers.python]
 inventories = ["https://docs.python.org/3/objects.inv"]
-paths = ["src"]
+# `examples_lib` holds the modules the example notebooks draw and document.
+paths = ["src", "examples_lib"]
 
 [project.plugins.mkdocstrings.handlers.python.options]
 annotations_path = "brief"

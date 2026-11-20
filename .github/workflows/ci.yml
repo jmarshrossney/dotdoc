@@ -28,6 +28,8 @@ jobs:
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
+      # Rendering needs Graphviz's `dot` program.
+      - run: sudo apt-get update && sudo apt-get install -y graphviz
       - run: uv sync --group dev --locked
       - run: uv run just test-cov
       # Neither linting nor the docs export fails on a notebook that raises.

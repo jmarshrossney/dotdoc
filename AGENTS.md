@@ -8,9 +8,12 @@
 
 ```
 src/dotdoc/
-  __init__.py      — public API (placeholder: `greet`)
+  __init__.py      — public API: re-exports `graph_html`, `PREVIEW_OVERLAY`
+  html.py          — `graph_html`: inline SVG, preview overlays, full-screen button
+  hamilton.py      — Hamilton style functions and `clean_legend` (`hamilton` extra)
 tests/             — one test file per module
 examples/          — marimo notebooks, exported into docs/ by `just docs`
+examples_lib/      — modules the notebooks import (`marimo check` reads every file in examples/ as a notebook)
 docs/              — hand-written Markdown + generated example.md
 site/              — built documentation output (gitignored)
 ```
@@ -34,6 +37,7 @@ All via `just`, prefixed with `uv run` unless the virtual environment is activat
 | `just release` | Tag the `pyproject.toml` version and publish a GitHub release for it, publishing to PyPI |
 
 Setup: `uv sync`.
+Rendering, and so most tests, the example and the docs, needs Graphviz's `dot` program; tests that need it skip without it.
 
 ## Releasing
 

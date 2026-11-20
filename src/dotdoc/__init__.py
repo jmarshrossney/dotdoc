@@ -1,27 +1,16 @@
-"""Make Graphviz drawings a navigable part of your documentation: nodes link to their API entries, with previews on hover.
+"""Make Graphviz drawings a navigable part of your documentation.
 
-This module is a placeholder. Replace it with your own — the point of the
-placeholder is to give the project a real public API, so that the linter, the
-type checker, the test suite and the API reference all have something to act on
-from the first commit.
+Give a node a `URL` attribute and render the drawing with `graph_html`: the
+node's name then links to that URL, and themes that preview links on hover,
+such as Zensical and Material for MkDocs, preview its target too. A `URL` made
+by `autoref` names an mkdocstrings identifier instead, and the documentation
+build writes the link, whatever the site's URL style.
+
+`dotdoc.hamilton` builds the attributes for drawings of Apache Hamilton DAGs,
+linking each node to the documentation of the function that defines it. It
+needs the `hamilton` extra.
 """
 
-__all__ = ["greet"]
+from .html import AUTOREF_PREFIX, PREVIEW_OVERLAY, autoref, graph_html
 
-
-def greet(name: str = "world") -> str:
-    """Build a friendly greeting.
-
-    Args:
-        name: Who to greet.
-
-    Returns:
-        The greeting.
-
-    Examples:
-        >>> greet()
-        'Hello, world!'
-        >>> greet("dotdoc")
-        'Hello, dotdoc!'
-    """
-    return f"Hello, {name}!"
+__all__ = ["AUTOREF_PREFIX", "PREVIEW_OVERLAY", "autoref", "graph_html"]
