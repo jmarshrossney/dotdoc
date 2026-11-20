@@ -308,3 +308,48 @@ def test_graphviz_colours():
     assert svg is not None
     assert "currentColor" not in ET.tostring(svg, encoding="unicode")
     assert any(p.get("fill") == "white" for p in svg.iter(f"{_SVG}polygon"))
+
+
+def _style(svg: ET.Element, text: str) -> tuple[str | None, str | None]:
+    """Return the style of a node's outline, and its text's fill."""
+    for group in svg.iter(f"{_SVG}g"):
+        label = next(group.iter(f"{_SVG}text"), None)
+        if group.get("class") == "node" and label is not None and label.text == text:
+            shape = next(el for el in group.iter() if el.get("stroke"))
+            return shape.get("style"), label.get("fill")
+    raise AssertionError(text)
+
+
+def test_dark_colours():
+    drawing = _colours_drawing()
+    drawing.node("other", style="filled", fillcolor="#123456")
+    svg = _drawing(graph_html(drawing, dark={"#FDE9C4": "#3b2702"})).find(f"{_SVG}svg")
+    assert svg is not None
+    # Mapped: drawn with light-dark(), and its text follows the page.
+    assert _style(svg, "filled") == (
+        "fill:light-dark(#fde9c4,#3b2702)",
+        "currentColor",
+    )
+    # Unmapped fill: unchanged, and its text keeps Graphviz's black.
+    assert _style(svg, "other") == (None, None)
+
+
+def test_auto_dark_colours():
+    drawing = _colours_drawing()
+    drawing.node("white", style="filled", fillcolor="white")
+    drawing.node("named", style="filled", fillcolor="lightblue")
+    svg = _drawing(graph_html(drawing, dark="auto")).find(f"{_SVG}svg")
+    assert svg is not None
+    assert _style(svg, "filled") == (
+        "fill:light-dark(#fde9c4,#3b2702)",
+        "currentColor",
+    )
+    assert _style(svg, "white") == ("fill:light-dark(white,#000000)", "currentColor")
+    # Only hex colours and white are derived.
+    assert _style(svg, "named") == (None, None)
+    assert _style(svg, "red") == (None, "red")
+
+
+def test_dark_needs_theme_colours():
+    with pytest.raises(ValueError, match="theme_colours"):
+        graph_html(_colours_drawing(), theme_colours=False, dark="auto")

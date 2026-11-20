@@ -76,7 +76,10 @@ drawing.edges(
     ]
 )
 
-print(graph_html(drawing, controls=True))
+# Colours for the theme's dark scheme.
+dark = {"#e7eef7": "#24344a", "#eeeeee": "#33353a", "#999999": "#6b6f78"}
+
+print(graph_html(drawing, controls=True, dark=dark))
 ```
 
 ## 1. Each node is given a target
@@ -122,7 +125,8 @@ Following a link is then the same gesture as previewing it, and the page avoids 
 Each linked node's name is underlined, whatever the theme does to links, to show where to click.
 
 Graphviz's white background is dropped, and what it draws in its default black, such as edges, outlines and text that is not on a filled shape, is redrawn in the page's text colour (`currentColor`), so the drawing follows the theme's light and dark schemes.
-Colours set in the drawing are kept.
+Colours set in the drawing are kept, unless `dark` gives each a counterpart for the dark scheme, or `dark="auto"` derives one.
+Those are drawn with CSS `light-dark()`, which the browser resolves by the colour scheme the theme declares, and text on them follows the page too.
 
 ## 5. Everything is returned as one piece of HTML
 

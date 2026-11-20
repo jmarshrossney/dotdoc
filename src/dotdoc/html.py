@@ -8,16 +8,17 @@ A node's `URL` may name an mkdocstrings identifier rather than a URL, through
 `autoref`, and the documentation build then writes the link.
 """
 
+import colorsys
 import html
 import json
 import re
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Any
+from typing import Any, Literal
 
 import graphviz
 
-__all__ = ["AUTOREF_PREFIX", "PREVIEW_OVERLAY", "autoref", "graph_html"]
+__all__ = ["AUTOREF_PREFIX", "PREVIEW_OVERLAY", "DarkColours", "autoref", "graph_html"]
 
 PREVIEW_OVERLAY: Mapping[str, str] = MappingProxyType({"data-preview": ""})
 """Overlay attributes that turn on instant previews in Zensical and Material for
@@ -129,34 +130,85 @@ def _identifier(url: str) -> str | None:
 
 _GROUP_RE = re.compile(r'<g id="[^"]*" class="(?P<kind>node|edge|cluster|graph)"')
 _SHAPE_RE = re.compile(r'<(?:ellipse|polygon|polyline|path) fill="(?P<fill>[^"]*)"')
+_COLOUR_ATTR_RE = re.compile(r' (?P<attr>fill|stroke)="(?P<colour>[^"]*)"')
+_HEX_RE = re.compile(r"#[0-9a-f]{6}")
 _BACKGROUND = '<polygon fill="white" stroke="none"'
+_NOT_COLOURS = frozenset({"none", "transparent", "black", "currentcolor"})
+
+type DarkColours = Mapping[str, str] | Literal["auto"]
+"""Light colours to the colours to draw them in on a dark background, or
+`"auto"` to derive one for each colour."""
 
 
-def _theme_colours(svg: str) -> str:
+def _auto_dark(colour: str) -> str | None:
+    """Return `colour` with its lightness flipped, or `None` if not hex."""
+    colour = "#ffffff" if colour == "white" else colour
+    if not _HEX_RE.fullmatch(colour):
+        return None
+    rgb = (int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5))
+    hue, lightness, saturation = colorsys.rgb_to_hls(*rgb)
+    dark = colorsys.hls_to_rgb(hue, 1 - lightness, saturation)
+    return "#" + "".join(f"{round(v * 255):02x}" for v in dark)
+
+
+def _theme_colours(svg: str, dark: DarkColours | None) -> str:
     """Draw Graphviz's default black in the page's text colour, on no background.
 
     Strokes and arrowheads drawn in black, and text that sits on the page
     rather than on a filled shape, become `currentColor`, which follows the
-    theme's light or dark scheme. Text on a filled shape keeps its colour, to
-    stay readable on light fills. Graphviz's white background is dropped.
+    theme's light or dark scheme. Graphviz's white background is dropped.
+
+    A colour with a dark counterpart in `dark` is drawn with CSS
+    `light-dark()`, which the browser resolves by the page's `color-scheme`;
+    text on a fill with a counterpart becomes `currentColor` too. Text on any
+    other fill keeps its colour, to stay readable on light fills.
     """
+    table = (
+        None
+        if dark == "auto" or dark is None
+        else {k.lower(): v for k, v in dark.items()}
+    )
+
+    def counterpart(colour: str) -> str | None:
+        colour = colour.lower()
+        if dark is None or colour in _NOT_COLOURS:
+            return None
+        return _auto_dark(colour) if table is None else table.get(colour)
+
+    def adapt(line: str) -> str:
+        line = line.replace('stroke="black"', 'stroke="currentColor"')
+        if not line.startswith("<text"):
+            line = line.replace('fill="black"', 'fill="currentColor"')
+        styles = [
+            f"{m['attr']}:light-dark({m['colour']},{html.escape(night)})"
+            for m in _COLOUR_ATTR_RE.finditer(line)
+            if (night := counterpart(m["colour"])) is not None
+        ]
+        if not styles:
+            return line
+        tag, rest = line.split(" ", 1)
+        return f'{tag} style="{";".join(styles)}" {rest}'
+
     lines = []
-    kind, filled, shape_seen = "graph", False, False
+    kind, keeps_text, shape_seen = "graph", False, False
     for line in svg.splitlines():
         if group := _GROUP_RE.match(line):
-            kind, filled, shape_seen = group["kind"], False, False
+            kind, keeps_text, shape_seen = group["kind"], False, False
         elif line.startswith("<text"):
-            if not filled and ' fill="' not in line:
+            if not keeps_text and ' fill="' not in line:
                 line = line.replace("<text", '<text fill="currentColor"', 1)
+            line = adapt(line)
         elif shape := _SHAPE_RE.match(line):
             if kind == "graph" and not shape_seen and line.startswith(_BACKGROUND):
                 shape_seen = True
                 continue
             if kind in ("node", "cluster") and not shape_seen:
-                filled = shape["fill"] not in ("none", "transparent")
+                fill = shape["fill"]
+                keeps_text = (
+                    fill not in ("none", "transparent") and counterpart(fill) is None
+                )
             shape_seen = True
-            line = line.replace('stroke="black"', 'stroke="currentColor"')
-            line = line.replace('fill="black"', 'fill="currentColor"')
+            line = adapt(line)
         lines.append(line)
     return "\n".join(lines)
 
@@ -256,6 +308,7 @@ def graph_html(
     overlay: Mapping[str, str] | None = PREVIEW_OVERLAY,
     controls: bool = False,
     theme_colours: bool = True,
+    dark: DarkColours | None = None,
 ) -> str:
     """Render a Graphviz drawing as an HTML fragment for a documentation page.
 
@@ -291,6 +344,15 @@ def graph_html(
             the drawing follows a theme's light and dark schemes. Text on a
             filled shape keeps its colour, and colours set in the drawing are
             kept. `False` keeps Graphviz's colours.
+        dark: Colours to draw in place of the drawing's own on a dark
+            background: a mapping from a colour, as given to Graphviz (case
+            ignored), to its dark counterpart, in any CSS form; or `"auto"`,
+            which flips the lightness of every colour given in hex, and of
+            white. Each is drawn with CSS `light-dark()`, which follows the
+            theme's light and dark schemes where the theme sets the CSS
+            `color-scheme`, as Zensical does. Text on a fill with a
+            counterpart is drawn in the page's text colour. Needs
+            `theme_colours`.
 
     Returns:
         A `<div class="dotdoc-graph">` holding a short stylesheet, the
@@ -299,7 +361,7 @@ def graph_html(
 
     Raises:
         ValueError: If Graphviz drew an SVG without the layout the overlays are
-            positioned from.
+            positioned from, or if `dark` is given without `theme_colours`.
 
     Examples:
         In a marimo notebook exported to a documentation page:
@@ -319,8 +381,10 @@ def graph_html(
     svg = "\n".join(line for line in (root + svg[root_end:]).splitlines() if line)
     overlays = _overlays(drawing, svg, overlay)
     svg = _unlink_nodes(svg)
+    if dark is not None and not theme_colours:
+        raise ValueError("`dark` needs `theme_colours`.")
     if theme_colours:
-        svg = _theme_colours(svg)
+        svg = _theme_colours(svg, dark)
     _, _, view_width, view_height = _view_box(svg)
     size = f"--dotdoc-width:{width}pt;" if width is not None else ""
     size += f"--dotdoc-ratio:{view_width / view_height:.4f}"

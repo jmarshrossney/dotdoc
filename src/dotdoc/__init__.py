@@ -11,6 +11,12 @@ linking each node to the documentation of the function that defines it. It
 needs the `hamilton` extra.
 """
 
-from .html import AUTOREF_PREFIX, PREVIEW_OVERLAY, autoref, graph_html
+from .html import AUTOREF_PREFIX, PREVIEW_OVERLAY, DarkColours, autoref, graph_html
 
-__all__ = ["AUTOREF_PREFIX", "PREVIEW_OVERLAY", "autoref", "graph_html"]
+__all__ = [
+    "AUTOREF_PREFIX",
+    "PREVIEW_OVERLAY",
+    "DarkColours",
+    "autoref",
+    "graph_html",
+]
