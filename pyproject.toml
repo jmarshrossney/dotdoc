@@ -55,6 +55,7 @@ dev = [
 docs = [
     "marimo>=0.23.16",
     "marimo-md-export>=0.10.0",
+    "markdown-exec>=1.13.0",
     "mkdocstrings-python>=2.0.5",
     "zensical>=0.0.52",
     {include-group = "examples"},

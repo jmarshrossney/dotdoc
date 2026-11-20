@@ -65,6 +65,8 @@ uv (packaging), just (tasks), ruff (format + lint), pyright (types), pytest (tes
 - Ruff `select` is explicit, never left to defaults — see the comment in `pyproject.toml`.
 - Docstrings are required in `src/` (google convention) and exempt in `tests/` and `examples/`.
 - `docs/example.md` and `docs/example_assets/` are **generated**; edit `examples/notebook.py` instead.
+- A `python exec="on"` block in `docs/` runs during the docs build (markdown-exec) and its output goes into the page.
+  The build passes even when a block raises, so `tests/test_docs.py` runs every such block.
 - The uv-pre-commit rev and the `uv_build` range in `[build-system]` must stay in step: the range is the rev's whole minor, `>=X.Y.0,<X.(Y+1).0`.
   `just bump` sets both from the installed uv after `uv self update`, updates the ruff and pyright hooks, relocks, and checks that `uv_build` still resolves under `exclude-newer`.
   The `[dependency-groups]` bounds are floors and are not bumped; see the comment above them.

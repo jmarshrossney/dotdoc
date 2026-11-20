@@ -112,7 +112,10 @@ pygments_lang_class = true
 [project.markdown_extensions.pymdownx.smartsymbols]
 [project.markdown_extensions.pymdownx.superfences]
 custom_fences = [
-  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" }
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+  # `exec="on"` runs a block at build time and writes its output into the page.
+  # The build passes even if the block raises: tests/test_docs.py runs them.
+  { name = "python", class = "python", validator = "markdown_exec.validator", format = "markdown_exec.formatter" },
 ]
 [project.markdown_extensions.pymdownx.tabbed]
 alternate_style = true
