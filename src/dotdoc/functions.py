@@ -24,17 +24,29 @@ def api_autoref(function: Callable) -> str:
     mkdocstrings registers it when that module is documented. See `autoref`.
 
     Args:
-        function: The function to link to.
+        function: The function or class to link to, defined at the top level
+            of a module or in a class.
 
     Returns:
         A `URL` for `graph_html` to write as an `<autoref>` element.
+
+    Raises:
+        TypeError: If `function` has no `__qualname__`, as with a
+            `functools.partial` or a callable instance, or is a lambda or is
+            defined inside a function, which mkdocstrings does not document.
 
     Examples:
         >>> from dotdoc import graph_html
         >>> api_autoref(graph_html)
         'autoref:dotdoc.html.graph_html'
     """
-    return autoref(f"{function.__module__}.{function.__qualname__}")
+    qualname = getattr(function, "__qualname__", None)
+    if not isinstance(qualname, str) or "<" in qualname:
+        raise TypeError(
+            "api_autoref needs a function or class defined at the top level of a "
+            f"module or in a class, not {function!r}"
+        )
+    return autoref(f"{function.__module__}.{qualname}")
 
 
 def summary(function: Callable) -> str | None:

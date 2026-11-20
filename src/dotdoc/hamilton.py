@@ -32,12 +32,14 @@ __all__ = [
     "LinkFunction",
     "StyleFunction",
     "TooltipFunction",
+    "api_autoref",
     "attribute_style",
     "clean_legend",
     "compose_styles",
     "fill_by",
     "fill_by_tag",
     "link_style",
+    "summary",
     "tooltip_style",
 ]
 
